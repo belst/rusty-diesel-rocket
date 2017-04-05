@@ -1,0 +1,15 @@
+[package]
+name = "dieselrocket"
+version = "0.1.0"
+authors = ["Joshua Rombauer <joshua.rombauer@tum.de>"]
+
+[dependencies]
+diesel = { version = "0.12", features = ["postgres"] }
+diesel_codegen = { version = "0.12", features = ["postgres"] }
+r2d2 = "0.7"
+r2d2-diesel = "0.12"
+dotenv = "0.10"
+rust-argon2 = "0.2"
+rocket = { git = "https://github.com/SergioBenitez/Rocket" }
+rocket_codegen = { git = "https://github.com/SergioBenitez/Rocket" }
+
