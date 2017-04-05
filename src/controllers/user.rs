@@ -24,10 +24,11 @@ impl<'v> FromFormValue<'v> for Identifier {
 
     // TODO: Add more sanity checking
     fn from_form_value(form_value: &'v RawStr) -> Result<Self, &'v str> {
+        let form_value = form_value.percent_decode().map_err(|_| "Utf8 decode error")?;
         if form_value.contains('@') {
-            Ok(Identifier::Email(form_value.percent_decode().unwrap().into()))
+            Ok(Identifier::Email(form_value.into()))
         } else {
-            Ok(Identifier::Username(form_value.percent_decode().unwrap().into()))
+            Ok(Identifier::Username(form_value.into()))
         }
     }
 }
@@ -56,6 +57,7 @@ pub fn login(pool: State<::PgSqlConn>,
 
     let user = users.filter(verification_token.eq(None::<String>));
     println!("{:?}", user);
+    println!("{:?}", creds.get());
     let user = match creds.get().identifier {
         Identifier::Username(ref uname) => users.filter(username.eq(uname)).first(&*conn),
         Identifier::Email(ref mail) => users.filter(email.eq(mail)).first(&*conn),
