@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width" />
+      <title>Rocket: Sessions</title>
+   </head>
+   <body>
+      <h1>Rocket Session: Please Register</h1>
+      {{#if flash}}
+         <p>{{ flash }}</p>
+      {{else}}
+      {{/if}}
+
+      <form action="/register" method="post" accept-charset="utf-8">
+         <label for="username">Username</label>
+         <input type="text" name="username" id="username" placeholder="Username"><br>
+         <label for="email">Email</label>
+         <input type="email" name="email" id="email" placeholder="Email"><br>
+         <label for="password">password</label>
+         <input type="password" name="password" id="password" placeholder="Password">
+         <p><input type="submit" value="Register"></p>
+      </form>
+   </body>
+</html>
+

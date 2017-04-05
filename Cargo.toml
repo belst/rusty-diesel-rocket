@@ -12,6 +12,7 @@ dotenv = "0.10"
 rust-argon2 = "0.2"
 rocket = { git = "https://github.com/SergioBenitez/Rocket" }
 rocket_codegen = { git = "https://github.com/SergioBenitez/Rocket" }
+rand = "0.3"
 
 [dependencies.rocket_contrib]
 git = "https://github.com/SergioBenitez/Rocket"

@@ -1,4 +1,5 @@
 extern crate argon2;
+extern crate rand;
 
 use rocket::State;
 use rocket::request::{Form, FlashMessage, FromFormValue};
@@ -7,9 +8,10 @@ use rocket::http::{Cookie, Session, RawStr};
 use rocket_contrib::Template;
 
 use diesel::prelude::*;
-use ::models::user::User;
+use ::models::user::{User, NewUser};
 use std::error::Error;
 use std::collections::HashMap;
+use self::rand::Rng;
 
 #[derive(Debug)]
 pub enum Identifier {
@@ -36,25 +38,29 @@ pub struct Credentials {
     password: String,
 }
 
-#[post("/login", data = "<creds>")]
+#[post("/login")]
+pub fn logged_user(_user: User) -> Redirect {
+    Redirect::to("/")
+}
+
+#[post("/login", data = "<creds>", rank = 2)]
 pub fn login(pool: State<::PgSqlConn>,
              mut session: Session,
              creds: Form<Credentials>)
              -> Flash<Redirect> {
     use ::schema::users::dsl::*;
-    if session.get("user_id").is_some() {
-        return Flash::success(Redirect::to("/"), "Already logged in");
-    }
     let conn = match pool.get() {
         Err(e) => return Flash::error(Redirect::to("/login"), e.description()),
         Ok(c) => c,
     };
 
     let user = users.filter(verification_token.eq(None::<String>));
+    println!("{:?}", user);
     let user = match creds.get().identifier {
-        Identifier::Username(ref uname) => user.filter(username.eq(uname.trim())).first(&*conn),
-        Identifier::Email(ref mail) => user.filter(email.eq(mail.trim())).first(&*conn),
+        Identifier::Username(ref uname) => users.filter(username.eq(uname)).first(&*conn),
+        Identifier::Email(ref mail) => users.filter(email.eq(mail)).first(&*conn),
     };
+    println!("{:?}", user);
 
     let user: User = match user {
         Err(e) => return Flash::error(Redirect::to("/login"), e.description()),
@@ -104,4 +110,54 @@ pub fn user_index(user: User) -> Template {
 #[get("/", rank = 2)]
 fn index() -> Redirect {
     Redirect::to("/login")
+}
+
+#[get("/register")]
+pub fn register_user(_user: User) -> Redirect {
+    Redirect::to("/")
+}
+
+#[get("/register", rank = 2)]
+pub fn register_page(flash: Option<FlashMessage>) -> Template {
+    let mut context = HashMap::new();
+    if let Some(ref msg) = flash {
+        context.insert("flash", msg.msg());
+    }
+
+    Template::render("register", &context)
+}
+
+#[post("/register")]
+pub fn registered_user(_user: User) -> Redirect {
+    Redirect::to("/")
+}
+
+#[post("/register", data = "<creds>", rank = 2)]
+pub fn register(pool: State<::PgSqlConn>, creds: Form<NewUser>) -> Flash<Redirect> {
+    use ::schema::users;
+    let conn = match pool.get() {
+        Err(e) => return Flash::error(Redirect::to("/register"), e.description()),
+        Ok(c) => c,
+    };
+
+    let salt = rand::thread_rng()
+        .gen_ascii_chars()
+        .take(10)
+        .collect::<String>();
+
+    let mut creds = creds.into_inner();
+    creds.password = match argon2::hash_encoded(creds.password.as_bytes(),
+                                        salt.as_bytes(),
+                                        &argon2::Config::default()) {
+        Err(e) => return Flash::error(Redirect::to("/register"), e.description()),
+        Ok(p) => p,
+    };
+
+    match ::diesel::insert(&creds).into(users::table).execute(&*conn) {
+        Err(e) => Flash::error(Redirect::to("/register"), e.description()),
+        Ok(_) => {
+            Flash::success(Redirect::to("/login"),
+                           "Registration successful. You can now login")
+        }
+    }
 }

@@ -41,7 +41,18 @@ fn main() {
 
     rocket::ignite()
         .mount("/",
-               routes![index, user_index, login_page, login_user, logout, login])
+               routes![index,
+                       user_index,
+                       login_page,
+                       login_user,
+                       logout,
+                       login,
+                       logged_user,
+                       register,
+                       registered_user,
+                       register_page,
+                       register_user
+               ])
         .manage(pool)
         .launch();
 }
