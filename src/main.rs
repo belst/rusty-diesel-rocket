@@ -1,12 +1,14 @@
 #![feature(plugin, custom_derive)]
 #![plugin(rocket_codegen)]
 extern crate rocket;
+extern crate rocket_contrib;
 
 #[macro_use]
 extern crate diesel_codegen;
 
 mod schema;
 mod models;
+mod controllers;
 
 #[macro_use]
 extern crate diesel;
@@ -14,11 +16,13 @@ extern crate dotenv;
 extern crate r2d2;
 extern crate r2d2_diesel;
 
+
 use diesel::pg::PgConnection;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
 use dotenv::dotenv;
 use std::env;
+use self::controllers::user::*;
 
 type PgSqlConn = Pool<ConnectionManager<PgConnection>>;
 
@@ -35,5 +39,9 @@ pub fn establish_connection() -> PgSqlConn {
 fn main() {
     let pool = establish_connection();
 
-    rocket::ignite().mount("/", routes![]).manage(pool).launch();
+    rocket::ignite()
+        .mount("/",
+               routes![index, user_index, login_page, login_user, logout, login])
+        .manage(pool)
+        .launch();
 }

@@ -13,3 +13,8 @@ rust-argon2 = "0.2"
 rocket = { git = "https://github.com/SergioBenitez/Rocket" }
 rocket_codegen = { git = "https://github.com/SergioBenitez/Rocket" }
 
+[dependencies.rocket_contrib]
+git = "https://github.com/SergioBenitez/Rocket"
+default_features = false
+features = ["handlebars_templates"]
+
