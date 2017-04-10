@@ -1,7 +1,6 @@
 extern crate argon2;
 extern crate rand;
 
-use rocket::State;
 use rocket::request::{Form, FlashMessage, FromFormValue};
 use rocket::response::{Redirect, Flash};
 use rocket::http::{Cookie, Session, RawStr};
@@ -12,6 +11,7 @@ use ::models::user::{User, NewUser};
 use std::error::Error;
 use std::collections::HashMap;
 use self::rand::Rng;
+use ::db;
 
 #[derive(Debug)]
 pub enum Identifier {
@@ -45,24 +45,18 @@ pub fn logged_user(_user: User) -> Redirect {
 }
 
 #[post("/login", data = "<creds>", rank = 2)]
-pub fn login(pool: State<::PgSqlConn>,
+pub fn login(conn: db::PgSqlConn,
              mut session: Session,
              creds: Form<Credentials>)
              -> Flash<Redirect> {
     use ::schema::users::dsl::*;
-    let conn = match pool.get() {
-        Err(e) => return Flash::error(Redirect::to("/login"), e.description()),
-        Ok(c) => c,
-    };
-
-    let user = users.filter(verification_token.eq(None::<String>));
-    println!("{:?}", user);
-    println!("{:?}", creds.get());
+    
+    // TODO: FIX
+    //let user = users.filter(verification_token.eq(None::<String>));
     let user = match creds.get().identifier {
         Identifier::Username(ref uname) => users.filter(username.eq(uname)).first(&*conn),
         Identifier::Email(ref mail) => users.filter(email.eq(mail)).first(&*conn),
     };
-    println!("{:?}", user);
 
     let user: User = match user {
         Err(e) => return Flash::error(Redirect::to("/login"), e.description()),
@@ -135,12 +129,8 @@ pub fn registered_user(_user: User) -> Redirect {
 }
 
 #[post("/register", data = "<creds>", rank = 2)]
-pub fn register(pool: State<::PgSqlConn>, creds: Form<NewUser>) -> Flash<Redirect> {
+pub fn register(conn: db::PgSqlConn, creds: Form<NewUser>) -> Flash<Redirect> {
     use ::schema::users;
-    let conn = match pool.get() {
-        Err(e) => return Flash::error(Redirect::to("/register"), e.description()),
-        Ok(c) => c,
-    };
 
     let salt = rand::thread_rng()
         .gen_ascii_chars()

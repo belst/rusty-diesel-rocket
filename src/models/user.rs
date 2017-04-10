@@ -1,7 +1,8 @@
-use rocket::{Outcome, State};
+use rocket::Outcome;
 use rocket::request::{self, FromRequest, Request};
 use diesel::prelude::*;
 use ::schema::users;
+use ::db;
 
 #[derive(Queryable, Debug)]
 pub struct User {
@@ -26,13 +27,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 
     fn from_request(req: &'a Request<'r>) -> request::Outcome<User, ()> {
         use ::schema::users::dsl::*;
-        let pool = match <State<::PgSqlConn> as FromRequest>::from_request(req) {
+        let conn = match <db::PgSqlConn as FromRequest>::from_request(req) {
             Outcome::Success(conn) => conn,
-            _ => return Outcome::Forward(()),
-        };
-
-        let conn = match pool.get() {
-            Ok(c) => c,
             _ => return Outcome::Forward(()),
         };
 
@@ -40,7 +36,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             .get("user_id")
             .and_then(|cookie| cookie.value().parse::<i32>().ok())
             .map(|uid| {
-                println!("{}", uid);
                 users.filter(id.eq(uid))
                     // TODO: FIX verification token
                     //.filter(verification_token.eq(None::<String>))
@@ -53,8 +48,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             Some(u) => u,
         };
         match user {
-            Err(e) => {
-                println!("{:#?}", e);
+            Err(_) => {
                 return Outcome::Failure((::rocket::http::Status::NotFound, ()));
             }
             Ok(u) => Outcome::Success(u),
