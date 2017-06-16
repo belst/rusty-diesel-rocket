@@ -17,6 +17,7 @@ extern crate dotenv;
 extern crate r2d2;
 extern crate r2d2_diesel;
 
+use rocket_contrib::Template;
 
 use controllers::user::*;
 
@@ -24,6 +25,7 @@ fn main() {
     let pool = db::establish_connection();
 
     rocket::ignite()
+        .attach(Template::fairing())
         .mount("/",
                routes![index,
                        user_index,

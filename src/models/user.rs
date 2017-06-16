@@ -32,8 +32,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             _ => return Outcome::Forward(()),
         };
 
-        let user = req.session()
-            .get("user_id")
+        let user = req.cookies()
+            .get_private("user_id")
             .and_then(|cookie| cookie.value().parse::<i32>().ok())
             .map(|uid| {
                 users.filter(id.eq(uid))

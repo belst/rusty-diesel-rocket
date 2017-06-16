@@ -3,7 +3,7 @@ extern crate rand;
 
 use rocket::request::{Form, FlashMessage, FromFormValue};
 use rocket::response::{Redirect, Flash};
-use rocket::http::{Cookie, Session, RawStr};
+use rocket::http::{Cookie, Cookies, RawStr};
 use rocket_contrib::Template;
 
 use diesel::prelude::*;
@@ -46,7 +46,7 @@ pub fn logged_user(_user: User) -> Redirect {
 
 #[post("/login", data = "<creds>", rank = 2)]
 pub fn login(conn: db::PgSqlConn,
-             mut session: Session,
+             mut session: Cookies,
              creds: Form<Credentials>)
              -> Flash<Redirect> {
     use ::schema::users::dsl::*;
@@ -67,15 +67,15 @@ pub fn login(conn: db::PgSqlConn,
         Err(e) => Flash::error(Redirect::to("/login"), e.description()),
         Ok(check) if !check => Flash::error(Redirect::to("/login"), "Invalid Password!"),
         Ok(_) => {
-            session.set(Cookie::new("user_id", user.id.to_string()));
+            session.add_private(Cookie::new("user_id", user.id.to_string()));
             Flash::success(Redirect::to("/"), "Login successful")
         }
     }
 }
 
 #[post("/logout")]
-pub fn logout(mut session: Session) -> Flash<Redirect> {
-    session.remove(Cookie::named("user_id"));
+pub fn logout(mut session: Cookies) -> Flash<Redirect> {
+    session.remove_private(Cookie::named("user_id"));
     Flash::success(Redirect::to("/login"), "Logout successful")
 }
 
